@@ -37,13 +37,14 @@ func loaderPoc(path string) (*NsePocs, error) {
 	return nse, nil
 }
 
-func CheckSingleVuln(filepath string) {
+func CheckSingleVuln(target, filepath string) {
 	poc, err := LoaderSingePoc(filepath)
 	if err != nil {
 		return
 	}
 
-	runPoc(poc)
+	runPoc(target, poc)
 }
 
-func runPoc(poc *NsePocs) {}
+func runPoc(target string, poc *NsePocs) {
+}
