@@ -7,5 +7,6 @@ import (
 var rootCmd = ishell.New()
 
 func Executor() {
+	rootCmd.SetPrompt("ipcsuite > ")
 	rootCmd.Run()
 }

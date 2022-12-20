@@ -1,33 +1,41 @@
 package utils
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
-
-	"github.com/fatih/color"
 )
 
-var (
-	author  string = "seaung"
-	version string = "1.0.0"
-)
+func GetFilenames(directory, extend string) []string {
+	var files []string
 
-func ShowBanner() {
-	name := fmt.Sprintf("ipcsuite-go (v.%s)", version)
-	banner := `
-    _                       _ __                       
-   (_)___  ____________  __(_) /____        ____ _____ 
-  / / __ \/ ___/ ___/ / / / / __/ _ \______/ __ '/ __ \
- / / /_/ / /__(__  ) /_/ / / /_/  __/_____/ /_/ / /_/ /
-/_/ .___/\___/____/\__,_/_/\__/\___/      \__, /\____/ 
- /_/                                     /____/        
+	if _, err := os.Stat(directory); os.IsNotExist(err) {
+		return nil
+	}
 
-	`
-	all_lines := strings.Split(banner, "\n")
-	w := len(all_lines[1])
+	filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			if strings.HasPrefix(info.Name(), extend) {
+				filename, _ := filepath.Abs(path)
+				files = append(files, filename)
+			}
+		}
+		return nil
+	})
+	return files
+}
 
-	fmt.Println(banner)
-	color.Yellow(fmt.Sprintf("%[1]*s", -w, fmt.Sprintf("%[1]*s", (w+len(name))/2, name)))
-	color.Cyan(fmt.Sprintf("%[1]*s", -w, fmt.Sprintf("%[1]*s", (w+len(author))/2, author)))
-	fmt.Println()
+func IsFileExists(filename string) bool {
+	fd, err := os.Stat(filename)
+	if err != nil {
+		return false
+	}
+	return !fd.IsDir()
+}
+
+func IsFolderExists(directory string) bool {
+	if _, err := os.Stat(directory); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
