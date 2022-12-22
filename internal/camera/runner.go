@@ -172,3 +172,124 @@ func runPoc(request *http.Request, poc *NsePoc) (bool, error) {
 
 	return success, nil
 }
+
+func RunNsePoc(request *http.Request, poc string) *NsePoc {
+	if p, err := LoadNsePoc(poc); err == nil {
+		if ok, err := runPoc(request, p); err == nil {
+			if ok {
+				return p
+			}
+		}
+	}
+
+	return nil
+}
+
+func RunMultiNsePoc(request *http.Request, poc string, rate int) {
+	var audits []Auditor
+	limit := time.Second / time.Duration(rate)
+	ticker := time.NewTicker(limit)
+
+	defer ticker.Stop()
+
+	for _, p := range LoadMutilNsePocs(poc) {
+		audit := Auditor{
+			Requests: request,
+			NsePocs:  p,
+		}
+
+		audits = append(audits, audit)
+	}
+
+	for res := range auditVuln(audits, ticker) {
+		utils.New().Info(fmt.Sprintf("%s %s", res.Requests.URL, res.NsePocs.Name))
+	}
+}
+
+func BatchNsePoc(target []string, path string, rate int) {
+	if poc, err := LoadNsePoc(path); err == nil {
+		limiter := time.Second / time.Duration(rate)
+		ticker := time.NewTicker(limiter)
+		defer ticker.Stop()
+
+		var audits []Auditor
+
+		for _, t := range target {
+			req, _ := http.NewRequest("GET", t, nil)
+			audit := Auditor{
+				Requests: req,
+				NsePocs:  poc,
+			}
+			audits = append(audits, audit)
+		}
+
+		for res := range auditVuln(audits, ticker) {
+			utils.New().Info(fmt.Sprintf("%s %s", res.Requests.URL, res.NsePocs.Name))
+		}
+	}
+}
+
+func BatchMultiNsePoc(target []string, path string, threadNumber, rate int) {
+	pocs := LoadMutilNsePocs(path)
+	limiter := time.Second / time.Duration(rate)
+	ticker := time.NewTicker(limiter)
+	defer ticker.Stop()
+
+	inChan := make(chan string)
+
+	go func() {
+		for _, t := range target {
+			inChan <- t
+		}
+		close(inChan)
+	}()
+
+	worker := func(ts <-chan string, wg *sync.WaitGroup, resChan chan<- []Auditor) {
+		defer wg.Done()
+
+		for _, t := range target {
+			var res []Auditor
+			var tsk []Auditor
+
+			req, _ := http.NewRequest("GET", t, nil)
+
+			for _, p := range pocs {
+				ts := Auditor{
+					Requests: req,
+					NsePocs:  p,
+				}
+				tsk = append(tsk, ts)
+			}
+
+			for rs := range auditVuln(tsk, ticker) {
+				res = append(res, rs)
+			}
+
+			resChan <- res
+		}
+	}
+
+	do := func() <-chan []Auditor {
+		var wg sync.WaitGroup
+
+		resChan := make(chan []Auditor, threadNumber)
+
+		for i := 0; i < threadNumber; i++ {
+			wg.Add(1)
+			go worker(inChan, &wg, resChan)
+		}
+
+		go func() {
+			wg.Wait()
+			close(resChan)
+		}()
+
+		return resChan
+	}
+
+	for res := range do() {
+		for _, r := range res {
+			utils.New().Info(fmt.Sprintf("%s %s", r.Requests.URL, r.NsePocs.Name))
+		}
+	}
+}
