@@ -403,3 +403,49 @@ func EvalExpression(env *cel.Env, expression string, params map[string]interface
 
 	return out, nil
 }
+
+func UrlType2String(u *protos.UrlType) string {
+	var buffer strings.Builder
+
+	if u.Scheme != "" {
+		buffer.WriteString(u.Scheme)
+		buffer.WriteByte(':')
+	}
+
+	if u.Scheme != "" || u.Host != "" {
+		if u.Host != "" || u.Path != "" {
+			buffer.WriteString("//")
+		}
+
+		if h := u.Host; h != "" {
+			buffer.WriteString(u.Host)
+		}
+	}
+
+	path := u.Path
+
+	if path != "" && path[0] != '/' && u.Host != "" {
+		buffer.WriteByte('/')
+	}
+
+	if buffer.Len() == 0 {
+		if i := strings.IndexByte(path, ':'); i > -1 && strings.IndexByte(path[:i], '/') == -1 {
+			buffer.WriteString("./")
+
+		}
+	}
+
+	buffer.WriteString(path)
+
+	if u.Query != "" {
+		buffer.WriteByte('?')
+		buffer.WriteString(u.Query)
+	}
+
+	if u.Fragment != "" {
+		buffer.WriteByte('#')
+		buffer.WriteString(u.Fragment)
+	}
+
+	return buffer.String()
+}

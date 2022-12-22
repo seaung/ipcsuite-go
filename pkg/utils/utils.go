@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -71,4 +72,27 @@ func IsFolderExists(directory string) bool {
 		return false
 	}
 	return true
+}
+
+func FindMatch(src, dest string) map[string]string {
+	re, err := regexp.Compile(src)
+	if err != nil {
+		return nil
+	}
+
+	res := re.FindStringSubmatch(dest)
+	names := re.SubexpNames()
+
+	if len(res) > 1 && len(names) > 1 {
+		setMap := make(map[string]string)
+		for key, value := range names {
+			if key > 0 && key <= len(res) {
+				setMap[value] = res[key]
+			}
+		}
+
+		return setMap
+	}
+
+	return nil
 }

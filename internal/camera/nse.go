@@ -19,11 +19,14 @@ type NsePoc struct {
 }
 
 type RequestRule struct {
-	Method     string            `yaml:"method"`
-	Cache      string            `yaml:"cache"`
-	Path       string            `yaml:"path"`
-	Headers    map[string]string `yaml:"header"`
-	Expression string            `yaml:"expression"`
+	Method        string            `yaml:"method"`
+	Cache         string            `yaml:"cache"`
+	Body          string            `yaml:"body"`
+	Path          string            `yaml:"path"`
+	Headers       map[string]string `yaml:"header"`
+	AllowRedirect bool              `yaml:"allow_redirect"`
+	Matchs        string            `yaml:"matchs"`
+	Expression    string            `yaml:"expression"`
 }
 
 type Author struct {
