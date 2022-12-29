@@ -96,3 +96,10 @@ func FindMatch(src, dest string) map[string]string {
 
 	return nil
 }
+
+func CheckSudo() {
+	if os.Getuid() != 0 {
+		New().Errors("this program need to have root permission to execute it for now!")
+		os.Exit(1)
+	}
+}

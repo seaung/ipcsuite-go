@@ -6,6 +6,7 @@ import (
 )
 
 func main() {
+	utils.CheckSudo()
 	utils.ShowBanner()
 
 	cmd.Executor()
